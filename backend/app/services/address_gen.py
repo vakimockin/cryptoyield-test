@@ -7,6 +7,7 @@ Patterns mimic real-world formats but addresses are NOT cryptographically valid:
 
 In production this would derive an address from a master xpub via BIP32.
 """
+
 import secrets
 import string
 

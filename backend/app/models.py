@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Numeric, String
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 
@@ -19,9 +19,7 @@ class User(Base):
     balance_eth = Column(Numeric(20, 8), nullable=False, default=Decimal("0"))
     balance_usdt = Column(Numeric(20, 8), nullable=False, default=Decimal("0"))
 
-    created_at = Column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow
-    )
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
 
 class DepositAddress(Base):
@@ -35,12 +33,11 @@ class DepositAddress(Base):
     )
     currency = Column(String(10), nullable=False)
     address = Column(String, nullable=False, unique=True)
-    created_at = Column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow
-    )
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
     __table_args__ = (
         Index("ix_deposit_addresses_user_currency", "user_id", "currency"),
+        UniqueConstraint("user_id", "currency", name="uq_deposit_addresses_user_currency"),
     )
 
 
@@ -58,12 +55,11 @@ class Deposit(Base):
     amount = Column(Numeric(20, 8), nullable=False)
     tx_hash = Column(String, nullable=False)
     status = Column(String(20), nullable=False, default="confirmed")
-    created_at = Column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow
-    )
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     confirmed_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         Index("ix_deposits_tx_hash", "tx_hash"),
         Index("ix_deposits_user_created", "user_id", "created_at"),
+        UniqueConstraint("tx_hash", name="uq_deposits_tx_hash"),
     )

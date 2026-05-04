@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, Header, HTTPException
@@ -8,8 +9,8 @@ from app.models import User
 
 
 def get_current_user(
-    x_user_id: str = Header(..., alias="X-User-Id"),
-    db: Session = Depends(get_db),
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    db: Annotated[Session, Depends(get_db)],
 ) -> User:
     """Resolve the current user from the X-User-Id header.
 
@@ -18,7 +19,7 @@ def get_current_user(
     try:
         user_uuid = UUID(x_user_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid X-User-Id header")
+        raise HTTPException(status_code=400, detail="Invalid X-User-Id header") from None
 
     user = db.query(User).filter(User.id == user_uuid).first()
     if user is None:
