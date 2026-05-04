@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cryptoyield_test_pg
+    environment:
+      POSTGRES_DB: cryptoyield_test
+      POSTGRES_USER: cryptoyield
+      POSTGRES_PASSWORD: cryptoyield
+    ports:
+      - "5432:5432"
+    volumes:
+      - cryptoyield_test_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cryptoyield -d cryptoyield_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  cryptoyield_test_pgdata:
