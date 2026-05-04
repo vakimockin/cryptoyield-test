@@ -96,3 +96,29 @@ frontend/
 3. In the PR description: what you finished, what you skipped, any trade-offs you want us to notice.
 
 Questions about the assignment — write directly, don't burn time guessing scope.
+
+## Implementation notes
+
+- Backend implements the three deposit endpoints from the task: address generation, deposit listing, and a public webhook.
+- Deposit addresses are idempotent per `(user_id, currency)`.
+- Webhook processing is idempotent per `tx_hash`.
+- The frontend uses a client component for `/deposit`, because the selected fake user is stored in `localStorage` and the page needs copy-to-clipboard behavior.
+- The deposit table uses a manual refresh button and refreshes after requesting an address. This avoids background API noise while still making Postman/curl webhook tests easy to verify.
+
+## Bonus answers
+
+### Idempotency
+
+Webhook idempotency is guaranteed with a database unique constraint on `deposits.tx_hash`. The endpoint inserts the deposit first; if Postgres rejects the insert because the transaction hash already exists, the request returns `{ "status": "ignored" }` and no balance update is executed. Other viable approaches are an explicit idempotency table, advisory locks, or Redis-based idempotency keys, but a Postgres unique constraint is the smallest reliable option here because the deposit itself is the durable record.
+
+### Race conditions
+
+Parallel webhook requests with different `tx_hash` values are safe because balances are updated with an atomic SQL expression: `balance_<currency> = balance_<currency> + amount`. The code never reads a balance into Python, adds to it, and writes it back, so concurrent updates do not overwrite each other. Duplicate concurrent webhooks are handled by the same `UNIQUE tx_hash` constraint.
+
+### Production hardening
+
+Before production, I would add HMAC verification for the raw webhook body with timestamp/replay protection, rate limiting and IP allowlisting for webhook endpoints, structured audit logs plus alerts for failed or suspicious deposit events, and stronger operational monitoring around delayed confirmations and reconciliation mismatches.
+
+### HD wallets
+
+For real address generation, I would derive addresses deterministically from an HD wallet xpub per currency and a stable derivation path per user/currency/account index. Private seed material should not live in the app database; it belongs in a KMS/HSM or a dedicated wallet service with strict access controls and rotation procedures. The app should store only public derivation metadata, generated addresses, and reconciliation state.
