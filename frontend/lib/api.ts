@@ -13,6 +13,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   headers.set("X-User-Id", currentUserId());
 
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`API ${res.status}: ${text}`);
